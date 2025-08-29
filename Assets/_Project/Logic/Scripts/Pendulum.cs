@@ -53,6 +53,6 @@ public class Pendulum : MonoBehaviour
 
         _currentCircleView = null;
 
-        Invoke("CreateNewCircle", 1f);
+        Invoke("CreateNewCircle", 1.5f);
     }
 }
