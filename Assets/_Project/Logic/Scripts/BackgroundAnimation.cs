@@ -9,9 +9,4 @@ public class BackgroundAnimation : MonoBehaviour
     {
         transform.DOMoveX(-15f, 10f).From(15f).SetEase(Ease.Linear).SetLoops(-1, LoopType.Yoyo);
     }
-
-    private void Update()
-    {
-        
-    }
 }
