@@ -1,28 +1,52 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
 public class MatchSystem : Singleton<MatchSystem>
 {
-    private List<CircleView>[] towers;
+    [SerializeField] private ScoreViewUI scoreViewUI;
+    [SerializeField] private GameObject matchSFXPrefab;
+    private int _scrore;
+
+    private List<CircleView>[] _towers;
+    private List<CircleView> _matches = new List<CircleView>();
+
+    private bool _isMatch = false;
+
+    public bool IsMatch => _isMatch;
 
     private void Start()
     {
         Setup();
+        scoreViewUI.Setup();
+        _scrore = 0;
     }
 
     public void AddCircleToTower(int towerIndex, CircleView circleView)
     {
-        towers[towerIndex].Add(circleView);
+        _towers[towerIndex].Add(circleView);
 
         CheckMatches();
     }
 
+    public int GetCirclesCount()
+    {
+        int circlesCount = 0;
+
+        for(int i = 0; i < _towers.Length; i++)
+        {
+            circlesCount += _towers[i].Count;
+        }
+
+        return circlesCount;
+    }
+
     private void Setup()
     {
-        towers = new List<CircleView>[3];
-        for (int i = 0; i < towers.Length; i++)
+        _towers = new List<CircleView>[3];
+        for (int i = 0; i < _towers.Length; i++)
         {
-            towers[i] = new List<CircleView>();
+            _towers[i] = new List<CircleView>();
         }
     }
 
@@ -31,20 +55,43 @@ public class MatchSystem : Singleton<MatchSystem>
         CheckVerticalMatch();
         CheckHorizontalMatch();
         CheckDiagonalMatch();
+
+        if(_isMatch)
+        {
+            Invoke("RemoveCircles", 0.5f);
+        }
+
+        GameOverSystem.Instance.CheckGameOver();
+    }
+
+    private void RemoveCircles()
+    {
+        for(int i = 0; i < _towers.Length; i++)
+        {
+            _towers[i].RemoveAll(circle => _matches.Contains(circle));
+        }
+
+        foreach(CircleView circleView in _matches)
+        {
+            Instantiate(matchSFXPrefab, circleView.transform.position, Quaternion.identity);
+            Destroy(circleView.gameObject);
+        }
+
+        _matches.Clear();
+        _isMatch = false;
     }
 
     private void CheckVerticalMatch()
     {
         for(int i = 0; i < 3; i++)
         {
-            if (towers[i].Count >= 3)
+            if (_towers[i].Count >= 3)
             {
-                if (CheckMatch(towers[i][0], towers[i][1], towers[i][2]))
+                if (CheckMatch(_towers[i][0], _towers[i][1], _towers[i][2]))
                 {
-                    Debug.Log("VERTICAL MATCH!!!");
-                    //TO DO REMOVE MATCH CIRCLE
-                    //TO DO ADD SCORE FOR MATCH
-                    //TO DO CREATE VFX
+                    Match(_towers[i][0], _towers[i][1], _towers[i][2]);
+                    _scrore += 10;
+                    scoreViewUI.UpdateScoreText(_scrore);
                 }
             }
         }
@@ -52,18 +99,17 @@ public class MatchSystem : Singleton<MatchSystem>
 
     private void CheckHorizontalMatch()
     {
-        if (towers[0].Count >= 1 && towers[1].Count >= 1 && towers[2].Count >= 1)
+        if (_towers[0].Count >= 1 && _towers[1].Count >= 1 && _towers[2].Count >= 1)
         {
             for (int i = 0; i < 3; i++)
             {
-                if (towers[0].Count > i && towers[1].Count > i && towers[2].Count > i)
+                if (_towers[0].Count > i && _towers[1].Count > i && _towers[2].Count > i)
                 {
-                    if (CheckMatch(towers[0][i], towers[1][i], towers[2][i]))
+                    if (CheckMatch(_towers[0][i], _towers[1][i], _towers[2][i]))
                     {
-                        Debug.Log("HORIZONTAL MATCH!!!");
-                        //TO DO REMOVE MATCH CIRCLE
-                        //TO DO ADD SCORE FOR MATCH
-                        //TO DO CREATE VFX
+                        Match(_towers[0][i], _towers[1][i], _towers[2][i]);
+                        _scrore += 10;
+                        scoreViewUI.UpdateScoreText(_scrore);
                     }
                 }
             }
@@ -72,27 +118,34 @@ public class MatchSystem : Singleton<MatchSystem>
 
     private void CheckDiagonalMatch()
     {
-        if (towers[0].Count >= 1 && towers[1].Count >= 2 && towers[2].Count >= 3)
+        if (_towers[0].Count >= 1 && _towers[1].Count >= 2 && _towers[2].Count >= 3)
         {
-            if (CheckMatch(towers[0][0], towers[1][1], towers[2][2]))
+            if (CheckMatch(_towers[0][0], _towers[1][1], _towers[2][2]))
             {
-                Debug.Log("DIAGONAL MATCH!!!");
-                //TO DO REMOVE MATCH CIRCLE
-                //TO DO ADD SCORE FOR MATCH
-                //TO DO CREATE VFX
+                Match(_towers[0][0], _towers[1][1], _towers[2][2]);
+                _scrore += 10;
+                scoreViewUI.UpdateScoreText(_scrore);
             }
         }
 
-        if (towers[2].Count >= 1 && towers[1].Count >= 2 && towers[0].Count >= 3)
+        if (_towers[2].Count >= 1 && _towers[1].Count >= 2 && _towers[0].Count >= 3)
         {
-            if (CheckMatch(towers[2][0], towers[1][1], towers[0][2]))
+            if (CheckMatch(_towers[2][0], _towers[1][1], _towers[0][2]))
             {
-                Debug.Log("DIAGONAL MATCH!!!");
-                //TO DO REMOVE MATCH CIRCLE
-                //TO DO ADD SCORE FOR MATCH
-                //TO DO CREATE VFX
+                Match(_towers[2][0], _towers[1][1], _towers[0][2]);
+                _scrore += 10;
+                scoreViewUI.UpdateScoreText(_scrore);
             }
         }
+    }
+
+    private void Match(CircleView circleView1, CircleView circleView2, CircleView circleView3)
+    {
+        _matches.Add(circleView1);
+        _matches.Add(circleView2);
+        _matches.Add(circleView3);
+
+        _isMatch = true;
     }
 
     private bool CheckMatch(CircleView circleView1, CircleView circleView2, CircleView circleView3)
@@ -101,5 +154,12 @@ public class MatchSystem : Singleton<MatchSystem>
             return true;
         else 
             return false;
+    }
+
+    [ContextMenu("AddScore")]
+    private void AddScoreTest()
+    {
+        _scrore += 10;
+        scoreViewUI.UpdateScoreText(_scrore);
     }
 }
